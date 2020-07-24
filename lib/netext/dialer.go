@@ -71,11 +71,12 @@ func (d *Dialer) DialContext(ctx context.Context, proto, addr string) (net.Conn,
 	delimiter := strings.LastIndex(addr, ":")
 	host := addr[:delimiter]
 
+	dnsResolver := NewDnsResolver(true)
 	// lookup for domain defined in Hosts option before trying to resolve DNS.
 	ip, ok := d.Hosts[host]
 	if !ok {
 		var err error
-		ip, err = d.Resolver.FetchOne(host)
+		ip, err = dnsResolver.Resolve(host)
 		if err != nil {
 			return nil, err
 		}
