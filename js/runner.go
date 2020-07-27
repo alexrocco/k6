@@ -36,7 +36,6 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/afero"
-	"github.com/viki-org/dnscache"
 	"golang.org/x/net/http2"
 	"golang.org/x/time/rate"
 
@@ -60,7 +59,6 @@ type Runner struct {
 	defaultGroup *lib.Group
 
 	BaseDialer net.Dialer
-	Resolver   *dnscache.Resolver
 	RPSLimit   *rate.Limiter
 
 	console   *console
@@ -100,7 +98,6 @@ func NewFromBundle(b *Bundle) (*Runner, error) {
 			DualStack: true,
 		},
 		console:  newConsole(),
-		Resolver: dnscache.New(0),
 	}
 
 	err = r.SetOptions(r.Bundle.Options)
@@ -154,7 +151,6 @@ func (r *Runner) newVU(id int64, samplesOut chan<- stats.SampleContainer) (*VU, 
 
 	dialer := &netext.Dialer{
 		Dialer:    r.BaseDialer,
-		Resolver:  r.Resolver,
 		Blacklist: r.Bundle.Options.BlacklistIPs,
 		Hosts:     r.Bundle.Options.Hosts,
 	}
