@@ -21,7 +21,6 @@
 package netext
 
 import (
-	"errors"
 	"fmt"
 	"net"
 )
@@ -39,8 +38,8 @@ func NewDnsResolver(disableIpv6 bool) *DnsResolver {
 }
 
 func (d *DnsResolver) Resolve(host string) (net.IP, error) {
+	// If cache found return it
 	if ip, ok := d.cache[host]; ok {
-		fmt.Printf("cache %s \n", ip.String())
 		return ip, nil
 	}
 
@@ -50,32 +49,26 @@ func (d *DnsResolver) Resolve(host string) (net.IP, error) {
 	}
 
 	if d.disableIpv6 {
+		var ipv4 net.IP
 		for _, ip := range ips {
 			if ip.To4() != nil {
 				d.cache[host] = ip
-				fmt.Printf("ipv4 found: %s \n", ip.String())
-
-				return ip, nil
+				ipv4 = ip
 			}
 		}
 
-		newIps, err := net.LookupIP(host)
-		if err != nil {
-			return nil, err
-		}
-
-		for _, ip := range newIps {
-			if ip.To4() != nil {
-				d.cache[host] = ip
-				fmt.Printf("ipv4 found in the second time: %s \n", ip.String())
-
-				return ip, nil
+		if ipv4 == nil {
+			ipsNotIpv4 := make([]string, 4)
+			for _, ip := range ips {
+				ipsNotIpv4 = append(ipsNotIpv4, ip.String())
 			}
+
+			return nil, fmt.Errorf("ipv4 not found, ips found %v", ipsNotIpv4)
 		}
 
-		return nil, errors.New("ipv4 not found")
+		return ipv4, nil
 	} else {
-		fmt.Printf("Fall back first ip %s \n", ips[0].String())
+		// Return the first IP got, this could be any IP A/AAAA
 		return ips[0], nil
 	}
 }

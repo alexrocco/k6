@@ -28,8 +28,6 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/viki-org/dnscache"
-
 	"github.com/loadimpact/k6/lib"
 	"github.com/loadimpact/k6/lib/metrics"
 	"github.com/loadimpact/k6/stats"
@@ -40,7 +38,6 @@ import (
 type Dialer struct {
 	net.Dialer
 
-	Resolver  *dnscache.Resolver
 	Blacklist []*lib.IPNet
 	Hosts     map[string]net.IP
 
@@ -52,7 +49,6 @@ type Dialer struct {
 func NewDialer(dialer net.Dialer) *Dialer {
 	return &Dialer{
 		Dialer:   dialer,
-		Resolver: dnscache.New(0),
 	}
 }
 
@@ -71,7 +67,9 @@ func (d *Dialer) DialContext(ctx context.Context, proto, addr string) (net.Conn,
 	delimiter := strings.LastIndex(addr, ":")
 	host := addr[:delimiter]
 
+	// Discard ipv6s while resolving the DNS
 	dnsResolver := NewDnsResolver(true)
+
 	// lookup for domain defined in Hosts option before trying to resolve DNS.
 	ip, ok := d.Hosts[host]
 	if !ok {
